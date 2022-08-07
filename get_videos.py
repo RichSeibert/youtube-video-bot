@@ -20,10 +20,9 @@ import youtube_dl
 from random import shuffle
 from os import listdir
 from time import sleep
-from moviepy.editor import VideoFileClip, concatenate_videoclips, ImageClip, CompositeVideoClip
 import praw
-from subprocess import Popen, check_output
-
+from subprocess import call, check_output
+from shutil import copy2
 
 
 ###############################################################################
@@ -42,7 +41,7 @@ def getlinks(subreddit):
     for sub in subreddit:
         for submission in reddit.subreddit(sub).top(time_filter='week', limit=limit):
             #Do not get add urls onto the list if they are picutres, gifs, or NSFW
-            if (submission.url[len(submission.url)-3:] not in ['jpg', 'png', 'gif', 'ifv']) and (not submission.over_18):
+            if (submission.url[len(submission.url)-3:] not in ['jpg', 'png', 'ifv']) and (not submission.over_18):
                 #print(submission.url[len(submission.url)-3:])
                 links.append(submission.url)
 
@@ -131,6 +130,11 @@ def download_videos(links, savedir):
 def combine_videos(savedir):
     print("Editing and combining videos...")
     
+    intro_vid_name = "intro1.mp4"
+    copy2(intro_vid_name, savedir+'/'+intro_vid_name)
+    
+    
+    
     tot_vid_dur = 0
     clips_sound = []
     #clips_nosound = []
@@ -149,64 +153,128 @@ def combine_videos(savedir):
                 audio_chk[index]=0
     '''
     
-    print("Resizing videos...")
+    
+    
+    
+    
     #Resize videos to have a height of 1080
+    print("Resizing videos...")
     for file in filenames:
         try:
-            Popen(['ffmpeg', '-i', savedir+'/'+file, '-vf', 'scale=-2:1080', savedir+'/resfix/'+file, '-hide_banner'])
-            sleep(90)
-            
+            #rc = call(['ffmpeg', '-i', savedir+'/'+file, '-vcodec', 'libx264', '-acodec', 'aac', '-vf', 'scale=-2:1080', '-r', '30', '-b:v', '10M', '-b:a', '128K', savedir+'/resfix/'+file[:len(file)-4]+'.mkv'])
+            rc = call(['ffmpeg', '-i', savedir+'/'+file, '-vcodec', 'libx264', '-acodec', 'aac', '-vf', 'scale=-2:1080', '-ac', '2', '-r', '30', '-b:v', '10M', '-b:a', '128K', savedir+'/resfix/'+file[:len(file)-4]+'.mkv'])
         except:
-            print("Failed to resize", file)
-    
+            pass
+        
+        if(rc!=0):
+            print("Failed to resize video", file, "\nError code", rc)
         
     
-    #Include intro video
-    clips_sound.append(VideoFileClip('intro1.mp4'))
     
-    for file in filenames:
+    
+    
+    
+    
+    
+    
+    
+    #Add videos to list of videos that should be put into final video
+    
+    resfix_filenames = listdir(savedir+'/resfix')
+    
+    #Need txt file for ffmpeg concat command input
+    #Format of txt file is "file file_name.mp4, new line, file file_name2.mp4"
+    
+    #clips_sound.append('file '+'resfix/'+'intro1.mp4') #Include intro video at beggining
+    
+    
+    for file in resfix_filenames:
         #If the duration of all the videos that are going to be combined is over 10 minutes, stop adding
         if(tot_vid_dur>600):
             break
         
-        for attempt in range(3): #Try 3 times to append
-            try:
-                clip = VideoFileClip(savedir+'/resfix/'+file)
-                vid_dur = int(clip.duration)
-                
-                #If the video is over 70 seconds don't add it to the list of videos to combine
-                if(vid_dur<70):
-                    clips_sound.append(clip)
-                    tot_vid_dur += vid_dur
+
+        try:
+            #Check duration
+            print("Attempt to add:", file)
+            output = check_output(['ffprobe', '-i', savedir+'/resfix/'+file, '-show_entries', 'format=duration', '-v', 'quiet']).decode()
+            vid_dur = int(float((output[19:26])))
+            #If the video is over 70 seconds don't add it to the list of videos to combine
+            if(vid_dur<70 or file!=intro_vid_name):
+                clips_sound.append('\n'+'file '+'resfix/'+file)
+                tot_vid_dur += vid_dur
+                print("Video duration is now:", tot_vid_dur)
                     
-                break
             
-            except:
-                print("Video combine failed, skipping video:", file)
-                sleep(5)
+        except:
+            print("Failed get", file, "duration")
+
     
     
-    #Concatinate videos and add watermark
-    print("Concatenate and adding watermark...")
-    final_clip = concatenate_videoclips(clips_sound, method="compose")
-    logo = (ImageClip("logo.png")
-          .set_start(7.5)
-          .set_duration(final_clip.duration)
-          .resize(height=50) # if you need to resize...
-          .margin(right=0, top=0, opacity=0) # (optional) logo-border padding
-          .set_pos(("right","bottom")))
-    final_clip = CompositeVideoClip([final_clip, logo])
-    final_clip.write_videofile(savedir+'/'+"combined.mp4")
     
+    
+    
+    #Create txt file
+    text_file = open(savedir+'/'+"clips_sound.txt", "w")
+    text_file.write('file '+'resfix/'+intro_vid_name[:len(intro_vid_name)-4]+'.mkv')
+    text_file.write(''.join(clips_sound))
+    text_file.close()
+    
+	
+	#Combine Videos
+    try:
+        rc = call(['ffmpeg', '-safe', '0', '-f', 'concat', '-i', savedir+'/'+'clips_sound.txt', '-c', 'copy', savedir+'/'+'combined.mp4'])
+    except:
+        pass
+    if(rc!=0):
+        print("Failed combine videos", file, "\nError code", rc)
+    
+    
+	
+    # # using these ffmpeg calls:
+
+    # # ffmpeg -i 1.mp4 -c copy -bsf:v h264_mp4toannexb -f mpegts intermediate1.ts
+    # # ffmpeg -i 2.mp4 -c copy -bsf:v h264_mp4toannexb -f mpegts intermediate2.ts
+    # # ffmpeg -i "concat:intermediate1.ts|intermediate2.ts" -c copy -bsf:a aac_adtstoasc combined.mp4
+
+    # dir2 = savedir+'/resfix/'
+    # concat_command = "concat:"
+	
+    # print("Concatenate...")
+    # for file in clips_sound:
+        # try:
+            # rc = call(['ffmpeg', '-i', dir2+file, '-c', 'copy', '-bsf:v', 'h264_mp4toannexb', '-f', 'mpegts', savedir+'/'+'intermediate'+file[:file.index('.')]+'.ts'])
+            # if(rc==0):
+                # concat_command += savedir+'/'+'intermediate'+file[:file.index('.')]+'.ts'
+        # except:
+            # continue
+        
+        # if(rc!=0):
+            # print("Failed to make ts file", file, "\nError code", rc)
+            # continue
+	
+        # if(clips_sound.index(file)!=len(clips_sound)-1):
+            # concat_command += '|'
+
+    # print(concat_command)
+    # try:
+        # rc = call(['ffmpeg', '-i', concat_command, '-c', 'copy', '-bsf:a', 'aac_adtstoasc', savedir+'/'+'combined.mp4'])
+        # #rc = call(['ffmpeg', '-i', concat_command, '-c', 'copy', savedir+'/'+'combined.mp4']) #Possibly able to combine videos without temp files, all files must have same metadata though
+    # except:
+        # pass
+
+    # if(rc!=0):
+        # print("Failed combine videos", file, "\nError code", rc)
+        
+            
 ###############################################################################    
 
 
 
-def main(subreddit, savedir):
+def main(subreddit, savedir, slideshow):
     links = getlinks(subreddit)
     download_videos(links, savedir)
     combine_videos(savedir)
 
 if __name__ == "__main__":
-    main(argv[1], argv[2])
-
+    main(argv[1], argv[2], argc[3])

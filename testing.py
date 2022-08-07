@@ -5,24 +5,40 @@ Created on Mon Oct  1 21:53:47 2018
 @author: Richie
 """
 
-from shutil import copy2
-import datetime
-from os import mkdir, getcwd, chdir, system, listdir
-from time import sleep
-from subprocess import Popen, check_output
-from moviepy.editor import VideoFileClip, concatenate_videoclips, ImageClip, CompositeVideoClip
-import praw
-import youtube_dl
+# from shutil import copy2
+# import datetime
+# from os import mkdir, getcwd, chdir, system, listdir
+# from time import sleep
+# from moviepy.editor import VideoFileClip, concatenate_videoclips, ImageClip, CompositeVideoClip
+# import praw
+# import youtube_dl
+from gtts import gTTS
+import os
 
-try:
-    clip = VideoFileClip("intro1.mp4")
-except:
-    print("peanut")
-    
-print( "hi" )
+
+tts = gTTS(text='Ocean Sunfish are the heaviest bony fish! They can weigh up to 1,000 kg (2,204 lbs). They are very curious and frequently approach divers and boats. ', lang='en')
+tts.save("good.mp3")
+#os.system("mpg321 good.mp3")
+
+
+
+# rc = call(['ffmpeg', '-i', 'intro1.mp4', '-vcodec', 'libx264', '-acodec', 'libvo_aacenc', '-vf', 'scale=-2:1080', '-r', '30', '-b:v', '10M', '-b:a', '128K', 'out.mp4', '-hide_banner'])
+
+
+
+#call(['ffprobe', '-i', '<file>', '-show_entries', 'format=duration', '-v', 'quiet', '-of', 'csv="p=0"'])
+
+
+
 
 
 '''
+w = "hello"
+r = call(['ffmpeg', '-i', "intro2.mp4", '-vf', 'scale=-2:1080', "22.mp4", '-hide_banner'])
+print("Failed", r, w, "\n", r)
+
+
+
 p = check_output(['ffprobe', '-v', 'error', '-select_streams', 'v:0', '-show_entries', 'stream=width,height', '-of', 'csv=s=x:p=0', '0.mp4'])
 print(p)
 

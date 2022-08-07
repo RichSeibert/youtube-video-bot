@@ -35,12 +35,13 @@ import datetime
 from os import makedirs
 from random import randint
 from time import sleep
+#from shutil import rmtree
 
 
 
 #Variables
 ###############################################################################
-title_beginning = ["Best", ""]
+title_beginning = ["Chicken Peanut:"]
 
 preposition = ["||"]
 
@@ -49,10 +50,8 @@ title_noun = [
              "WTF", 
              "Funny",
              "Cute", 
-             "Live Stream Fail",
-             "Freakout",
              "Fast Worker",
-             "Public Fight"
+             "Live Stream Fail"
              ]
 
 #List of subreddits to makes videos out of
@@ -60,23 +59,40 @@ subreddit_list = [
                  ["WTF"],
                  ["Funny", "HoldMyBeer", "HoldMyCosmo", "ContagiousLaughter"],
                  ["aww", "ChildrenFallingOver"],
-                 ["LivestreamFail"],
-                 ["PublicFreakout"],
                  ["FastWorkers"],
-                 ["StreetFights"]
+                 ["LivestreamFail"]
                  ]
+                 
+#Slideshow? Slideshow option will take images and gifs from the subreddit(s) and overlay audio of a TTS reading of the submition title
+slideshow = [
+            False,
+            False,
+            False,
+            False,
+            False,
+            True
+            ]
 ###############################################################################
 
 
 
-            
-i = datetime.datetime.today().weekday()
 
-savedir = str(datetime.date.today()) + '/' + title_noun[i]
+
+
+#Pick subreddit that matches the day of week
+i = datetime.datetime.today().weekday() % len(title_noun)
+
+date_folder = str(datetime.date.today())
+savedir = date_folder + '/' + title_noun[i]
 resfixfolder = savedir+'/'+'resfix'
 
 
-#Make new folder(s) for videos
+
+
+
+
+
+#Make new folder(s) for videos, copy intro video into temp files
 try:
     makedirs(resfixfolder)
 except:
@@ -87,7 +103,7 @@ except:
 #Get videos and compile
 try:
     print("***Making video***")
-    get_videos.main(subreddit_list[i], savedir)
+    get_videos.main(subreddit_list[i], savedir, slideshow[i])
 except:
     print("Critical error while making video for " + str(subreddit_list[i]))
 
@@ -96,7 +112,6 @@ except:
   
 #Upload
 for attempt in range(3): #If the video fails to upload, it will try to upload 2 more times with 5 second breaks inbetween
-    
     try:
         print("***Uploading video***")
         #Upload parameters for youtube api, [file, title, decription, category, keywords, privacy]
@@ -129,3 +144,9 @@ for attempt in range(3): #If the video fails to upload, it will try to upload 2 
         sleep(5) #Wait 5 seconds before trying to upload again
 
 
+
+#Write to log file feature
+sleep(10)
+#Delete folder
+#rmtree(date_folder)
+exit()
