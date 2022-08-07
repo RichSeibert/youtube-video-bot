@@ -20,7 +20,7 @@ from apiclient.errors import HttpError
 from apiclient.http import MediaFileUpload
 from oauth2client.client import flow_from_clientsecrets
 from oauth2client.file import Storage
-from oauth2client.tools import argparser, run_flow
+from oauth2client.tools import run_flow
 
 
 # Explicitly tell the underlying HTTP transport library not to retry, since
@@ -76,6 +76,8 @@ https://developers.google.com/api-client-library/python/guide/aaa_client_secrets
 """ % os.path.abspath(os.path.join(os.path.dirname(__file__),
                                    CLIENT_SECRETS_FILE))
 
+
+
 VALID_PRIVACY_STATUSES = ("public", "private", "unlisted")
 
 
@@ -102,7 +104,7 @@ def get_authenticated_service(args):
 def initialize_upload(youtube, options):
   tags = None
   if options[4]:
-    tags = options.keywords.split(",")
+    tags = options[4].split(",")
 
   body=dict(
     snippet=dict(
@@ -174,9 +176,10 @@ def resumable_upload(insert_request):
 def main(file, title, description, category, keywords, privacy):
     if not os.path.exists(file):
         exit("Please specify a valid file using the --file= parameter.")
-        
+   
     args = [file, title, description, category, keywords, privacy]
     youtube = get_authenticated_service(args)
+
     try:
         initialize_upload(youtube, args)
     except(HttpError):
@@ -186,7 +189,7 @@ def main(file, title, description, category, keywords, privacy):
 
 if __name__ == '__main__':
     main(sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4], sys.argv[5], sys.argv[6])
-    
+
     
 '''
 Arguments:
