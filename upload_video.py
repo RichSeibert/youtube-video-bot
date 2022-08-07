@@ -3,7 +3,15 @@
 Created on Sun Nov 25 21:51:37 2018
 
 @author: Richie
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+DESCRIPTION:
+Uploads a youtube video
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 """
+
+
 
 #https://developers.google.com/youtube/v3/guides/uploading_a_video
 
@@ -84,6 +92,8 @@ VALID_PRIVACY_STATUSES = ("public", "private", "unlisted")
 
 ###############################################################################
 def get_authenticated_service(args):
+  print("Authenticating Youtube credentials...")
+    
   flow = flow_from_clientsecrets(CLIENT_SECRETS_FILE,
     scope=YOUTUBE_UPLOAD_SCOPE,
     message=MISSING_CLIENT_SECRETS_MESSAGE)
@@ -102,6 +112,8 @@ def get_authenticated_service(args):
   
 ###############################################################################
 def initialize_upload(youtube, options):
+  print("Initializing upload...")
+  
   tags = None
   if options[4]:
     tags = options[4].split(",")
@@ -189,8 +201,12 @@ def main(file, title, description, category, keywords, privacy):
 
 if __name__ == '__main__':
     main(sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4], sys.argv[5], sys.argv[6])
-
     
+    #Debug
+    #main("2018-12-22/WTF"+'/'+"combined.mp4","test123", "", "24", "funny,funny videos,funny fails,aww,cool,coolio,wow,compilation,wtf,lol,savage,dope,hot,fails", "private")
+    
+    
+###############################################################################
 '''
 Arguments:
     1- argparser.add_argument("--file", required=True, help="Video file to upload")
